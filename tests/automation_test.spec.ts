@@ -1,7 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { RegisterPage } from '../pages/RegisterPage';
+import { LoginPage } from '../pages/LoginPage';
+import { AccountPage } from '../pages/AccountPage';
 
-test('Happy Path: Registro y Login en Automation Test Store', async ({ page }) => {
-  // Generar datos únicos
+test('Happy Path: Registro, Logout y Login con POM', async ({ page }) => {
+  const loginPage = new LoginPage(page);
+  const registerPage = new RegisterPage(page);
+  const accountPage = new AccountPage(page);
+
   const uniqueId = Date.now();
   const userData = {
     firstName: 'QA',
@@ -14,67 +20,21 @@ test('Happy Path: Registro y Login en Automation Test Store', async ({ page }) =
     password: 'Password123!'
   };
 
-  // 1. Ir a la web y click en Login or register
-  await page.goto('https://automationteststore.com/');
-  await page.getByRole('link', { name: 'Login or register' }).click();
+  // 1. Navegación e inicio de registro
+  await loginPage.goToLogin();
+  await loginPage.startRegistration();
 
-  // 2. Bajo "I am a new customer" click en Continue
-  await page.getByRole('button', { name: 'Continue' }).click();
+  // 2. Registro de usuario
+  await registerPage.fillRegistrationForm(userData);
+  await accountPage.confirmSuccess();
 
-  // 3. Llenar todos los datos del formulario
-  await page.locator('#AccountFrm_firstname').fill(userData.firstName);
-  await page.locator('#AccountFrm_lastname').fill(userData.lastName);
-  await page.locator('#AccountFrm_email').fill(userData.email);
-  await page.locator('#AccountFrm_address_1').fill(userData.address);
-  await page.locator('#AccountFrm_city').fill(userData.city);
+  // 3. Logout
+  await accountPage.logout();
 
-  // --- FIX DE PAÍS Y REGIÓN ---
-  await page.locator('#AccountFrm_country_id').selectOption({ index: 1 });
-  
-  const zoneId = page.locator('#AccountFrm_zone_id');
-  await expect(async () => {
-    const count = await zoneId.locator('option').count();
-    expect(count).toBeGreaterThan(1);
-  }).toPass(); 
+  // 4. Re-Login con credenciales nuevas
+  await loginPage.loginOrRegisterLink.click();
+  await loginPage.login(userData.loginName, userData.password);
 
-  await zoneId.selectOption({ index: 1 });
-  // -----------------------------
-
-  await page.locator('#AccountFrm_postcode').fill(userData.zipCode);
-  await page.locator('#AccountFrm_loginname').fill(userData.loginName);
-  await page.locator('#AccountFrm_password').fill(userData.password);
-  await page.locator('#AccountFrm_confirm').fill(userData.password);
-
-  // 4. Newsletter subscribe: NO (Cambiado check por click)
-  await page.locator('#AccountFrm_newsletter0').click();
-
-  // 5. Click en el checkbox de Privacy Policy (Este sí es checkbox)
-  await page.locator('#AccountFrm_agree').check();
-
-  // 6. Click en el boton Continue del formulario
-  // Usamos .first() por si hay duplicados en el DOM
-  await page.getByRole('button', { name: 'Continue' }).click();
-
-  // 7. Click en Continue (Confirmación de cuenta creada)
-  // Agregamos .first() para asegurar que no falle por ambigüedad
-  await page.getByRole('link', { name: 'Continue' }).first().click();
-
-  // 8. Ir al panel derecho y click en "Logoff" (Tu versión original)
-  await page.locator('#maincontainer').getByRole('link', { name: 'Logoff' }).click();
-
-  // 9. Click en continue
-  await page.getByRole('link', { name: 'Continue' }).click();
-
-  // 10. Click en Login or register
-  await page.getByRole('link', { name: 'Login or register' }).click();
-
-  // 11. Ingresar con las credenciales creadas
-  await page.locator('#loginFrm_loginname').fill(userData.loginName);
-  await page.locator('#loginFrm_password').fill(userData.password);
-
-  // 12. Click en Login
-  await page.getByRole('button', { name: 'Login' }).click();
-
-  // Verificación final
-  await expect(page.locator('span.maintext')).toContainText('My Account');
+  // 5. Verificación final
+  await expect(accountPage.mainText).toContainText('My Account');
 });
