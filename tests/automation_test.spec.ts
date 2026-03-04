@@ -45,18 +45,19 @@ test('Happy Path: Registro y Login en Automation Test Store', async ({ page }) =
   await page.locator('#AccountFrm_password').fill(userData.password);
   await page.locator('#AccountFrm_confirm').fill(userData.password);
 
-  // 4. Newsletter subscribe: NO
-  await page.locator('#AccountFrm_newsletter0').check();
+  // 4. Newsletter subscribe: NO (Cambiado check por click)
+  await page.locator('#AccountFrm_newsletter0').click();
 
-  // 5. Click en el checkbox de Privacy Policy
+  // 5. Click en el checkbox de Privacy Policy (Este sí es checkbox)
   await page.locator('#AccountFrm_agree').check();
 
   // 6. Click en el boton Continue del formulario
+  // Usamos .first() por si hay duplicados en el DOM
   await page.getByRole('button', { name: 'Continue' }).click();
 
   // 7. Click en Continue (Confirmación de cuenta creada)
-  // Usamos el de tu versión original que funcionaba
-  await page.getByRole('link', { name: 'Continue' }).click();
+  // Agregamos .first() para asegurar que no falle por ambigüedad
+  await page.getByRole('link', { name: 'Continue' }).first().click();
 
   // 8. Ir al panel derecho y click en "Logoff" (Tu versión original)
   await page.locator('#maincontainer').getByRole('link', { name: 'Logoff' }).click();
